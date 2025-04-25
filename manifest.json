@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "TikTok Auto Reply",
+  "version": "1.0",
+  "description": "Tự động phản hồi đánh giá TikTok Seller - có tuỳ chọn gửi hoặc chỉ điền.",
+  "permissions": ["scripting", "activeTab","storage"],
+  "host_permissions": ["https://seller-vn.tiktok.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

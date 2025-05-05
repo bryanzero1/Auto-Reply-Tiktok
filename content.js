@@ -1,13 +1,19 @@
+// Đảm bảo chỉ khai báo một lần
+let isAutoReplyRunning = false; // Biến toàn cục để kiểm soát trạng thái
+
 // Hàm để hiển thị thông báo trên màn hình
 function showToast(message, type = "info", duration = 3000) {
-  const existing = document.querySelector(".custom-toast");
-  if (existing) existing.remove();
+  try {
+    const existing = [...document.querySelectorAll(".custom-toast")].find(
+      (toast) => toast.innerText === message
+    );
+    if (existing) return; // Nếu thông báo đã tồn tại, không tạo thêm
 
-  const toast = document.createElement("div");
-  toast.className = "custom-toast toast-" + type;
-  toast.innerHTML = `<span>${message}</span>`;
+    const toast = document.createElement("div");
+    toast.className = "custom-toast toast-" + type;
+    toast.innerHTML = `<span>${message}</span>`;
 
-  Object.assign(toast.style, {
+    Object.assign(toast.style, {
       position: "fixed",
       top: "280px",
       right: "20px",
@@ -20,204 +26,325 @@ function showToast(message, type = "info", duration = 3000) {
       fontSize: "14px",
       opacity: "0",
       transform: "translateY(20px)",
-      transition: "opacity 0.3s ease, transform 0.3s ease"
-  });
+      transition: "opacity 0.3s ease, transform 0.3s ease",
+    });
 
-  document.body.appendChild(toast);
-  requestAnimationFrame(() => {
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
       toast.style.opacity = "1";
       toast.style.transform = "translateY(0)";
-  });
+    });
 
-  setTimeout(() => {
+    setTimeout(() => {
       toast.style.opacity = "0";
       toast.style.transform = "translateY(20px)";
       setTimeout(() => toast.remove(), 300);
-  }, duration);
+    }, duration);
+  } catch (error) {
+    console.error("Error in showToast:", error);
+  }
 }
 
 // Hàm tạo phản hồi tự động với trễ ngẫu nhiên
-function generateReply(sentiment, stars) {
-  const replies = {
-      positive: [
-          "Mặc đồ bộ xinh xinh mà còn để lại feedback dễ thương nữa, cảm ơn bạn nhiều nha 💕",
-          "Nhìn comment mà muốn gói thêm yêu thương gửi đến bạn luôn nè 😘",
-          "Đồ bộ đẹp - người mặc xinh - khách đáng yêu quá trời luôn 💖",
-          "Feedback này làm shop vui muốn xỉu luôn đó bạn ơi ✨",
-          "Cảm ơn nàng xinh đã luôn tin tưởng đồ bộ nhà em nha 🌸🌸",
-          "Không gì hạnh phúc hơn là thấy khách mặc đồ xinh rồi còn hài lòng nữa 💖",
-          "Mặc đồ bộ xinh xinh mà còn để lại feedback dễ thương nữa, cảm ơn bạn nhiều nha 💕",
-          "Nhìn comment mà muốn gói thêm yêu thương gửi đến bạn luôn nè 😘",
-          "Đồ bộ đẹp - người mặc xinh - khách đáng yêu quá trời luôn 💖",
-          "Feedback này làm shop vui muốn xỉu luôn đó bạn ơi ✨",
-          "Cảm ơn nàng xinh đã luôn tin tưởng đồ bộ nhà em nha 🌸🌸",
-          "Không gì hạnh phúc hơn là thấy khách mặc đồ xinh rồi còn hài lòng nữa 💖",
-          "Ở nhà mà vẫn xinh, vẫn chill là nhờ nàng đó nhaaa 💃💕",
-          "Mỗi feedback như thế này là một bông hoa cho tụi em đó 🌸",
-          "Giao đồ bộ mà nhận lại nụ cười - cảm ơn bạn thiệt nhiều 💝",
-          "Shop mong mỗi lần mặc bộ này bạn đều cảm thấy thật nhẹ nhàng và xinh đẹp 🌿",
-          "Phản hồi này làm tụi em muốn tặng thêm 10 bộ nữa luôn á 😄",
-          "Cảm ơn vì đã chọn tụi em để 'lên đồ' mỗi ngày tại gia nha 👗💫",
-          "U là trời! Feedback này làm shop muốn nhảy múa luôn đó 🕺💃",
-          "Cảm ơn bạn thật nhiều 💖 Đơn sau nhớ quay lại với shop nha!",
-          "Đọc bình luận của bạn mà tim muốn tan chảy luôn 💖",
-          "Trời ơi iu quá đi mất! Cảm ơn bạn đã luôn ủng hộ shop nè 💕",
-          "Nhận được phản hồi của bạn là niềm vui lớn với shop đó ạ 🌈",
-          "Cảm ơn bạn khách dễ thương nè! Hẹn bạn lần mua sau thiệt xịn nữa nha ✨",
-          "Bạn đáng yêu quá đi! Feedback vậy là tụi mình có thêm động lực lớn ghê đó💝💝💝 ",
-          "Không biết nói gì ngoài 2 chữ: TUYỆT VỜI! 💯 Cảm ơn bạn nhiều thiệt nhiều!",
-          "Shop cảm ơn bạn vì đã chia sẻ trải nghiệm đáng yêu thế này nhen 🌸",
-          "Đọc bình luận mà lòng nhẹ tênh luôn ạ 🌸 Cảm ơn bạn đã tin tưởng tụi mình!",
-          "Shop chúc bạn một ngày thật rực rỡ như comment của bạn vậy 🌞",
-          "Feedback như nắng mai vậy đó! Shop cảm ơn bạn nha ☀️",
-          "Vì bạn vui là shop vui! Gửi bạn 1000 trái tim nè 💝💝💝",
-          "Quá xuất sắc luôn! Cảm ơn bạn đã lan tỏa năng lượng tích cực tới shop 🕺💃",
-          "Shop cảm ơn bạn nhiều lắm ạ! ❤️",
-          "Cảm ơn bạn đã ủng hộ đồ bộ nhà em nha 🥰",
-          "Bạn ưng là tụi mình vui rồi ❤️",
-          "Đội ơn bạn iu, cảm ơn bạn đã đánh giá 5 sao nhé ✨",
-          "Lời động viên của bạn là động lực lớn với shop ạ 🌟",
-          "Shop chúc bạn luôn xinh đẹp và rạng rỡ nha 😘",
-          "Cảm ơn bạn đã tin tưởng và lựa chọn tụi mình 💕",
-          "Rất vui vì bạn hài lòng, cảm ơn bạn nha 😍",
-          "Shop sẽ cố gắng hơn nữa để không làm bạn thất vọng 💪",
-          "Cảm ơn bạn iu đã để lại đánh giá dễ thương quá trời 💝"
-      ],
-      neutral: [
-          "Cảm ơn bạn đã góp ý. Chúng tôi sẽ cải thiện để phục vụ bạn tốt hơn!💝",
-          "Chúng tôi rất trân trọng ý kiến của bạn, cảm ơn bạn rất nhiều!💝",
-          "Ý kiến của bạn rất quý giá với shop 💌",
-          "Mong lần sau bạn sẽ hài lòng hơn ❤️",
-          "Cảm ơn bạn đã góp ý 🌟 Shop sẽ cải thiện để phục vụ tốt hơn!",
-          "Bạn nói đúng á, tụi mình sẽ cố gắng nhiều hơn nè 💪",
-          "Ý kiến của bạn rất quý giá với shop 💝",
-          "Cảm ơn bạn đã đánh giá, tụi mình sẽ cải thiện thêm ạ!",
-          "Góp ý của bạn là điều rất quý giá với shop 💌",
-          "Shop sẽ cố gắng tốt hơn trong lần tới nhé!",
-          "Mong lần sau bạn sẽ hài lòng hơn ❤️",
-      ],
-      negative: [
-        "Thật sự xin lỗi bạn 😢 Shop sẽ xử lý ngay và khắc phục triệt để.",
-        "Mình không muốn bạn buồn đâu 😔 Inbox shop để được hỗ trợ tốt hơn nhé!",
-        "Cảm ơn bạn đã phản hồi, dù buồn nhưng tụi mình ghi nhận rất nghiêm túc 🙏",
-        "Shop rất tiếc vì bạn chưa hài lòng 💔",
-        "Tụi mình xin lỗi và sẽ kiểm tra lại đơn hàng kỹ hơn.",
-        "Mình sẽ cải thiện ngay lập tức. Mong được bạn thông cảm!",
-        "Cảm ơn bạn đã phản hồi, shop cam kết khắc phục 🌱",
-        "Rất mong có cơ hội phục vụ bạn tốt hơn lần sau ạ!"
-      ]
-  };
+async function getRandomReply(fileName) {
+  try {
+    const response = await fetch(chrome.runtime.getURL(fileName));
+    const text = await response.text();
+    const replies = text.split("\n").filter((line) => line.trim() !== "");
+    return replies[Math.floor(Math.random() * replies.length)];
+  } catch (error) {
+    console.error(`Error reading ${fileName}:`, error);
+    return null;
+  }
+}
 
-  if (stars === 5) {
-      // Phản hồi cho đánh giá 5 sao (tích cực)
-      return replies["positive"][Math.floor(Math.random() * replies["positive"].length)];
+async function generateAIReply(commentText, sentiment) {
+  const apiKey = "sk-oTNySx8lcyWnGVSS6b66C0Aa35944379A60e98B0EeF73eBb"; // Thay bằng API Key của bạn
+  const baseUrl = "https://api.sv2.llm.ai.vn/v1/chat/completions"; // Base URL chính xác
+  const modelName = "openai:gpt-4o"; // Model Name
+
+  try {
+    const response = await fetch(baseUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`, // Sử dụng Bearer token
+      },
+      body: JSON.stringify({
+        model: modelName, // Model bạn muốn sử dụng
+        temperature: 0.7, // Mức độ sáng tạo
+        max_tokens: 100, // Số lượng token tối đa
+
+      
+        messages: [
+          {
+            role: "user",
+            content: `Hãy tạo một phản hồi ${sentiment} cho đánh giá sau: "${commentText}". 
+Giới hạn phản hồi từ 60 đến 90 từ. Đừng vượt quá giới hạn này. Hãy sử dụng ngôn ngữ tự nhiên và thân thiện, thêm một vài biểu tượng cảm xúc phù hợp với cảm xúc của phản hồi.`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error:", errorData); // Log chi tiết lỗi
+      return null;
+    }
+
+    const data = await response.json();
+    console.log("API Response:", data); // Log phản hồi từ API
+    return data.choices[0].message.content.trim(); // Trả về nội dung phản hồi
+  } catch (error) {
+    console.error("Error in generateAIReply:", error);
+    return null;
+  }
+}
+
+// Hàm để tạo phản hồi tự động cho các đánh giá
+// Sử dụng AI để tạo phản hồi cho các đánh giá tích cực và tiêu cực
+// Nếu không có phản hồi từ AI, sử dụng các file tĩnh để tạo phản hồi cho các đánh giá trung tính
+async function generateReply(sentiment, stars, commentText) {
+  try {
+    console.log("Gọi generateReply cho phản hồi:", { commentText, stars });
+    const aiReply = await generateAIReply(commentText, sentiment);
+    if (aiReply) {
+      const wordCount = aiReply.split(" ").length;
+      console.log(`Phản hồi từ API có ${wordCount} từ:`, aiReply);
+    }
+    if (!aiReply) {
+      console.warn("API không trả về phản hồi. Chuyển sang sử dụng file tĩnh.");
+    } else {
+      return formatReply(aiReply, sentiment);
+    }
+  } catch (error) {
+    console.warn("AI không hoạt động, chuyển sang sử dụng file tĩnh:", error);
   }
 
-  // Kiểm tra phản hồi tiêu cực
-  if (stars <= 2) {
-      return replies["negative"][Math.floor(Math.random() * replies["negative"].length)];
+  try {
+    let reply;
+    if (sentiment === "positive" && stars === 5) {
+      reply = (await getRandomReply("positive.txt")) || "Cảm ơn bạn đã để lại đánh giá tích cực! 💖";
+    } else if (stars <= 2) {
+      reply = (await getRandomReply("negative.txt")) || "Shop rất tiếc vì bạn chưa hài lòng 💔";
+    } else {
+      reply = (await getRandomReply("neutral.txt")) || "Cảm ơn bạn đã góp ý. Chúng tôi sẽ cải thiện để phục vụ bạn tốt hơn! 💝";
+    }
+    return formatReply(reply, sentiment);
+  } catch (error) {
+    console.error("Error in generateReply (file tĩnh):", error);
+    return null;
+  }
+}
+
+// Hàm định dạng phản hồi (giới hạn từ và thêm biểu tượng cảm xúc)
+function formatReply(reply, sentiment) {
+  // Giới hạn phản hồi trong 60-90 từ
+  const words = reply.split(" ");
+  const trimmedReply = words.slice(0, 90).join(" "); // Giới hạn tối đa 90 từ
+
+  // Nếu số từ ít hơn 60, thêm thông báo cảnh báo
+  if (words.length < 60) {
+    console.warn("Phản hồi có ít hơn 60 từ. Hãy kiểm tra lại prompt hoặc API.");
   }
 
-  // Nếu không phải 5 sao hoặc 1-2 sao, trả về trung lập
-  return replies["neutral"][Math.floor(Math.random() * replies["neutral"].length)];
+  // Thêm biểu tượng cảm xúc phù hợp
+  const emoji = sentiment === "positive" ? "😊" : sentiment === "negative" ? "😔" : "🤗";
+  return `${trimmedReply} ${emoji}`;
 }
 
 // Hàm để mô phỏng hành vi người thật trong việc nhập văn bản
-function typeText(element, text, speed = 100) {
-  return new Promise(resolve => {
-      let i = 0;
-      function typeNextChar() {
-          if (i < text.length) {
-              element.value += text.charAt(i);
-              i++;
-              setTimeout(typeNextChar, Math.random() * speed + 50); // Thêm độ trễ ngẫu nhiên
-          } else {
-              resolve();  // Khi đã nhập xong
-          }
-      }
-      typeNextChar();
-  });
-}
-
-// Hàm để mô phỏng hành động di chuyển chuột ngẫu nhiên
-function moveMouseRandomly() {
-  const mouseX = Math.floor(Math.random() * window.innerWidth);
-  const mouseY = Math.floor(Math.random() * window.innerHeight);
-  const event = new MouseEvent('mousemove', {
-      clientX: mouseX,
-      clientY: mouseY
-  });
-  document.dispatchEvent(event);
-}
-
-
-
-// Hàm xử lý phản hồi tự động
-async function autoReply() {
-  // Kiểm tra nếu chế độ autoReply bị tắt
-  if (window.__replyMode__ === null) {
-      showToast("🛑 Không có phản hồi nào từ khách cần xử lý.", "error");  // Thông báo khi không có phản hồi
-      return;  // Dừng lại nếu chế độ tự động phản hồi bị tắt
+async function typeText(element, text, speed = 100) {
+  element.value = ""; // Xóa nội dung cũ
+  for (let i = 0; i < text.length; i++) {
+    element.value += text[i];
+    element.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, speed)); // Thêm trễ giữa các ký tự
   }
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+  element.dispatchEvent(new Event("blur", { bubbles: true }));
+  console.log("Hoàn thành việc điền nội dung:", element.value);
+}
 
+function getReplyButtons() {
   const allButtons = [...document.querySelectorAll(".text-p3-semibold.text-brand")];
-  const replyButtons = allButtons.filter(btn => btn.innerText?.trim().toLowerCase() === "phản hồi");
+  console.log("Tất cả các nút tìm thấy:", allButtons);
 
-  if (!replyButtons.length) {
-      showToast("🛑 Không có phản hồi nào từ khách cần xử lý.", "error");
-      return;  // Dừng lại nếu không có phản hồi nào
-  }
+  // Lọc các nút "Phản hồi" và loại bỏ trùng lặp
+  const replyButtons = allButtons
+    .filter((btn) => btn.innerText?.trim().toLowerCase() === "phản hồi")
+    .filter((btn, index, self) => self.indexOf(btn) === index);
 
-  // Duyệt qua tất cả các phản hồi
-  for (let index = 0; index < replyButtons.length; index++) {
-      const btn = replyButtons[index];
-      const container = btn.closest(".ratingListItem-pYOYoL");
-      if (!container) continue;
-
-      const comment = container.querySelector(".reviewText-f3ry9k");
-      if (!comment) continue;
-
-      const commentText = comment.innerText;
-      const stars = container.querySelectorAll("svg.activeStar-OiHELX").length;  // Kiểm tra sao đánh giá
-      const sentiment = detectFinalSentiment(container, commentText);  // Xác định tình cảm (positive, negative, neutral)
-      const reply = generateReply(sentiment, stars);  // Tạo phản hồi dựa trên tình cảm và sao
-
-      btn.scrollIntoView({ behavior: "smooth", block: "center" });
-      btn.click();
-
-      await new Promise(r => setTimeout(r, Math.random() * 1500 + 1000));  // Thêm trễ ngẫu nhiên
-
-      const textarea = document.querySelector("textarea.core-textarea.pulse-input-textarea");
-      const sendBtn = document.querySelector("button.core-btn.core-btn-primary");
-
-      if (textarea) {
-          // Nhập văn bản vào ô phản hồi một cách tự nhiên
-          await typeText(textarea, reply, 150);  // Thời gian nhập mỗi ký tự
-          textarea.dispatchEvent(new Event('input', { bubbles: true }));
-          textarea.focus();
-
-          // Nếu ở chế độ "send" (Tự động gửi phản hồi)
-          if (window.__replyMode__ === "send" && sendBtn) {
-              await new Promise(r => setTimeout(r, Math.random() * 1000 + 500)); // Thêm trễ ngẫu nhiên trước khi gửi
-              sendBtn.click();  // Gửi phản hồi
-
-              // Gửi thông báo và lưu lịch sử phản hồi
-              chrome.runtime?.sendMessage?.({ comment: commentText, reply: reply });
-              showToast(`📦 Đã xử lý ${index + 1}/${replyButtons.length} phản hồi`, "success");
-          } else {
-              showToast(`✍️ Đã điền phản hồi ${index + 1}/${replyButtons.length}`, "info"); // Chỉ điền sẵn
-          }
-      }
-
-      await new Promise(r => setTimeout(r, Math.random() * 3000 + 1500));  // Thêm trễ ngẫu nhiên giữa các phản hồi
-  }
-
-  showToast("✅ Đã hoàn thành phản hồi cho tất cả khách hàng.", "success");
+  console.log("Các nút 'Phản hồi' tìm thấy:", replyButtons);
+  return replyButtons;
 }
 
-// Kiểm tra trạng thái tự động từ storage
-chrome.storage.sync.get(["autoReply"], (result) => {
-  if (result.autoReply) {
-      setTimeout(() => autoReply(), 2500); // Tự động phản hồi sau khi bật
+async function processReply(btn, index, total) {
+  const container = btn.closest(".ratingListItem-pYOYoL");
+  if (!container) {
+    console.warn(`Không tìm thấy container cho phản hồi thứ ${index + 1}`);
+    return false;
+  }
+
+  const comment = container.querySelector(".reviewText-f3ry9k");
+  if (!comment) {
+    console.warn(`Không tìm thấy comment cho phản hồi thứ ${index + 1}`);
+    return false;
+  }
+
+  const commentText = comment.innerText;
+  const stars = parseInt(container.querySelectorAll("svg.activeStar-OiHELX").length, 10);
+  console.log(`Phản hồi thứ ${index + 1}: comment="${commentText}", stars=${stars}`);
+
+  const reply = await generateReply(
+    stars === 5 ? "positive" : stars <= 2 ? "negative" : "neutral",
+    stars,
+    commentText
+  );
+
+  if (!reply) {
+    console.error("Không thể tạo phản hồi. Bỏ qua phản hồi này.");
+    showToast("❌ Không thể tạo phản hồi. Vui lòng kiểm tra lại.", "error");
+    return false;
+  }
+
+  btn.scrollIntoView({ behavior: "smooth", block: "center" });
+  btn.click();
+
+  await new Promise((r) => setTimeout(r, Math.random() * 1500 + 1000));
+
+  const textarea = document.querySelector("textarea.core-textarea.pulse-input-textarea");
+  const sendBtn = document.querySelector("button.core-btn.core-btn-primary");
+
+  if (!textarea) {
+    console.error("Không tìm thấy ô nhập văn bản, dừng xử lý phản hồi.");
+    showToast("❌ Không tìm thấy ô nhập phản hồi. Vui lòng kiểm tra giao diện.", "error");
+    return false;
+  }
+
+  console.log("Nội dung phản hồi:", reply);
+  console.log("Textarea value trước khi điền:", textarea.value);
+
+  // Sử dụng hàm typeText để mô phỏng hành vi người dùng
+  await typeText(textarea, reply, 50);
+
+  console.log("Textarea value sau khi điền:", textarea.value);
+
+  if (window.__replyMode__ === "send" && sendBtn) {
+    console.log("Nhấn nút gửi...");
+    await new Promise((r) => setTimeout(r, Math.random() * 1000 + 500));
+    sendBtn.click();
+    showToast(`📦 Đã xử lý phản hồi ${index + 1}/${total}`, "success");
+  } else {
+    showToast(`✍️ Đã điền phản hồi ${index + 1}/${total}. Đợi người dùng gửi.`, "info");
+  }
+
+  return true;
+}
+
+async function autoReply() {
+  if (isAutoReplyRunning) {
+    console.warn("Auto Reply đang chạy, không thể khởi động lại.");
+    return;
+  }
+
+  isAutoReplyRunning = true; // Đặt trạng thái là đang chạy
+  try {
+    console.log("Bắt đầu autoReply với chế độ:", window.__replyMode__);
+
+    // Đợi một chút để giao diện tải xong
+    await new Promise((r) => setTimeout(r, 2000));
+
+    const replyButtons = getReplyButtons();
+    if (!replyButtons.length) {
+      showToast("🛑 Không có phản hồi nào từ khách cần xử lý.", "error");
+      return;
+    }
+
+    for (let index = 0; index < replyButtons.length; index++) {
+      const success = await processReply(replyButtons[index], index, replyButtons.length);
+      if (!success) {
+        console.error(`Phản hồi thứ ${index + 1} không được xử lý.`);
+        showToast("❌ Có lỗi xảy ra khi xử lý phản hồi. Vui lòng kiểm tra lại.", "error");
+        return; // Dừng lại nếu có lỗi
+      }
+
+      // Nếu chế độ là "fill", dừng lại sau khi điền phản hồi
+      if (window.__replyMode__ === "fill") {
+        console.log("Chế độ 'fill' được kích hoạt. Dừng lại sau khi điền phản hồi.");
+        break;
+      }
+
+      await new Promise((r) => setTimeout(r, Math.random() * 3000 + 1500)); // Thêm trễ ngẫu nhiên giữa các phản hồi
+    }
+
+    showToast("✅ Đã hoàn thành phản hồi cho tất cả khách hàng.", "success");
+  } catch (error) {
+    console.error("Error in autoReply:", error);
+    showToast(`❌ Lỗi: ${error.message}`, "error");
+  } finally {
+    isAutoReplyRunning = false; // Đặt trạng thái là không chạy
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const runReplyButton = document.getElementById("run-reply");
+  const stopReplyButton = document.getElementById("stop-reply");
+
+  if (!runReplyButton || !stopReplyButton) {
+    console.error("Không tìm thấy các phần tử cần thiết trong giao diện.");
+    return;
+  }
+
+  console.log("runReplyButton:", runReplyButton);
+  console.log("stopReplyButton:", stopReplyButton);
+
+  // Nút dừng Auto Reply
+  stopReplyButton.addEventListener("click", async () => {
+    try {
+      stopReplyButton.disabled = true; // Vô hiệu hóa nút
+      await chrome.storage.sync.set({ autoReply: false });
+      console.log("🛑 Auto Reply đã được tắt.");
+    } catch (error) {
+      console.error("Error stopping Auto Reply:", error);
+    } finally {
+      stopReplyButton.disabled = false; // Kích hoạt lại nút
+    }
+  });
+
+  // Nút chạy Auto Reply
+  runReplyButton.addEventListener("click", async () => {
+    try {
+      runReplyButton.disabled = true;
+      await chrome.storage.sync.set({ autoReply: true });
+      console.log("✅ Auto Reply đã được bật.");
+
+      const targetUrl = "https://seller-vn.tiktok.com/product/rating?shop_region=VN";
+      if (!window.location.href.startsWith("http")) {
+        alert("Vui lòng chuyển sang một tab website (không phải chrome://) trước khi bấm Start Auto Reply!");
+        return;
+      }
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        const tab = tabs[0];
+        if (tab && tab.url && tab.url.startsWith("http")) {
+          chrome.tabs.update(tab.id, { url: targetUrl });
+        } else {
+          alert("Vui lòng chuyển sang một tab website (không phải chrome://) trước khi bấm Start Auto Reply!");
+        }
+      });
+    } catch (error) {
+      console.error("Error starting Auto Reply:", error);
+    } finally {
+      runReplyButton.disabled = false;
+    }
+  });
+});
+
+// Lắng nghe sự kiện khi trang đã tải xong
+chrome.webNavigation.onCompleted.addListener(function(details) {
+  if (details.url === "https://seller-vn.tiktok.com/product/rating?shop_region=VN") {
+    // Trang đã tải xong, chạy tiện ích của bạn ở đây
+    console.log("Trang đã tải xong, bắt đầu chạy tiện ích...");
+    autoReply();
   }
 });

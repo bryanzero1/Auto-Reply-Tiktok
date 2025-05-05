@@ -1,63 +1,89 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const runReplyButton = document.getElementById("run-reply");
+  const stopReplyButton = document.getElementById("stop-reply");
+
+  if (!runReplyButton || !stopReplyButton) {
+    console.error("Không tìm thấy các phần tử cần thiết trong giao diện.");
+    return;
+  }
+
   // Nút bắt đầu Auto Reply
-  document.getElementById("run-reply").addEventListener("click", async () => {
-      const mode = document.querySelector('input[name="replyMode"]:checked')?.value || "send";
-      const autoReplyChecked = mode === "send";
+  runReplyButton.addEventListener("click", async () => {
+    try {
+      // Cập nhật trạng thái autoReply trong storage
+      await chrome.storage.sync.set({ autoReply: true });
+      showToast("✅ Auto Reply đã được bật.", "success");
 
-      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-      chrome.storage.sync.set({ autoReply: autoReplyChecked });
-
-      // Thực thi content.js với chế độ đã chọn
-      await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ["content.js"]
+      // Gửi tin nhắn đến content script để bắt đầu autoReply
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0].id) {
+          chrome.scripting.executeScript(
+            {
+              target: { tabId: tabs[0].id },
+              files: ["content.js"], // Chèn content.js nếu chưa được tải
+            },
+            () => {
+              chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: () => {
+                  console.log("Auto Reply đang được kích hoạt...");
+                  if (typeof autoReply === "function") {
+                    autoReply();
+                  } else {
+                    console.error("Hàm autoReply không được định nghĩa.");
+                  }
+                },
+              });
+            }
+          );
+        }
       });
-
-      // Truyền chế độ vào content.js để điền sẵn hoặc gửi
-      await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: (mode) => {
-              window.__replyMode__ = mode;
-              if (typeof autoReply === "function") {
-                  autoReply();
-              }
-          },
-          args: [mode]
-      });
+    } catch (error) {
+      console.error("Error starting Auto Reply:", error);
+    }
   });
 
   // Nút Tắt Auto Reply
-  document.getElementById("stop-reply").addEventListener("click", async () => {
-      chrome.storage.sync.set({ autoReply: false });  // Tắt chế độ Auto Reply
-
-      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-      // Thực thi content.js và dừng việc phản hồi
-      await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-              // Đặt biến chế độ là null để dừng các phản hồi tự động
-              window.__replyMode__ = null;
-              console.log("Auto Reply đã tắt.");
-          }
-      });
-
-      // Hiển thị thông báo Toast
-      const toast = document.getElementById("toast");
-      toast.innerText = "🛑 Auto Reply has been stopped.";  // Hiển thị thông báo mới
-      toast.classList.add("show");
-      setTimeout(() => {
-          toast.classList.remove("show");  // Ẩn sau 3 giây
-      }, 3000);
+  stopReplyButton.addEventListener("click", async () => {
+    try {
+      // Cập nhật trạng thái autoReply trong storage
+      await chrome.storage.sync.set({ autoReply: false });
+      showToast("🛑 Đã tắt Auto Reply.", "info");
+    } catch (error) {
+      console.error("Error stopping Auto Reply:", error);
+    }
   });
 
   // Đồng bộ chế độ phản hồi từ lưu trữ
   chrome.storage.sync.get(["autoReply"], (result) => {
-      if (result.autoReply) {
-          document.getElementById("autoReplyMode").checked = true;
-      } else {
-          document.getElementById("onlyFill").checked = true;
-      }
+    const autoReplyMode = document.getElementById("autoReplyMode");
+    const onlyFillMode = document.getElementById("onlyFill");
+
+    if (!autoReplyMode || !onlyFillMode) {
+      console.error("Không tìm thấy các phần tử radio để đồng bộ chế độ.");
+      return;
+    }
+
+    if (result.autoReply) {
+      autoReplyMode.checked = true;
+    } else {
+      onlyFillMode.checked = true;
+    }
   });
 });
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  if (!toast) {
+    console.error("Không tìm thấy phần tử Toast.");
+    return;
+  }
+
+  toast.innerText = message;
+  toast.classList.add("show");
+
+  clearTimeout(toast.timeout); // Xóa timeout cũ nếu có
+  toast.timeout = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+}
